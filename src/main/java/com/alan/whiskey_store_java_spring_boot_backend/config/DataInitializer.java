@@ -6,8 +6,11 @@ import com.alan.whiskey_store_java_spring_boot_backend.entity.enums.Role;
 import com.alan.whiskey_store_java_spring_boot_backend.repository.ProductRepository;
 import com.alan.whiskey_store_java_spring_boot_backend.repository.UserAccountRepository;
 import com.alan.whiskey_store_java_spring_boot_backend.service.SlugUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -15,22 +18,37 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
     private final ProductRepository productRepository;
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String adminEmail;
+    private final String adminPassword;
+    private final String userEmail;
+    private final String userPassword;
 
     public DataInitializer(
             ProductRepository productRepository,
             UserAccountRepository userAccountRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            @Value("${app.seed.admin-email:admin@whiskeystore.com}") String adminEmail,
+            @Value("${app.seed.admin-password:}") String adminPassword,
+            @Value("${app.seed.user-email:user@whiskeystore.com}") String userEmail,
+            @Value("${app.seed.user-password:}") String userPassword
     ) {
         this.productRepository = productRepository;
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminEmail = adminEmail;
+        this.adminPassword = adminPassword;
+        this.userEmail = userEmail;
+        this.userPassword = userPassword;
     }
 
     @Override
@@ -43,10 +61,23 @@ public class DataInitializer implements ApplicationRunner {
         if (userAccountRepository.count() > 0) {
             return;
         }
+        String resolvedAdminPassword = resolveSeedPassword(adminPassword, adminEmail, "admin");
+        String resolvedUserPassword = resolveSeedPassword(userPassword, userEmail, "customer");
         userAccountRepository.saveAll(List.of(
-                createUser("Admin", "User", "admin@whiskeystore.com", "Admin123!", Role.ADMIN),
-                createUser("Sample", "Customer", "user@whiskeystore.com", "Password123!", Role.USER)
+                createUser("Admin", "User", adminEmail, resolvedAdminPassword, Role.ADMIN),
+                createUser("Sample", "Customer", userEmail, resolvedUserPassword, Role.USER)
         ));
+    }
+
+    private String resolveSeedPassword(String configuredPassword, String email, String label) {
+        if (configuredPassword != null && !configuredPassword.isBlank()) {
+            log.info("Seeded {} account '{}' using password from configuration.", label, email);
+            return configuredPassword;
+        }
+
+        String generatedPassword = UUID.randomUUID() + "A1!";
+        log.info("Seeded {} account '{}' with generated password: {}", label, email, generatedPassword);
+        return generatedPassword;
     }
 
     private void seedProducts() {
