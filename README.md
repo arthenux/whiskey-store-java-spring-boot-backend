@@ -3,11 +3,19 @@
 Spring Boot REST API for the Whiskey Store portfolio project.
 
 Built with 
-**Java 25** 
-**Spring Boot 4.0.5**
+**Java 25**, 
+**Spring Boot 4.0.5** 
 **Spring Security** 
-**Spring Data JPA** 
+**Spring Data JPA**
 **MySQL**
+
+## Related Repository
+
+This backend is consumed by the Angular frontend application:
+
+- Frontend repository: [Whiskey Store Frontend](https://github.com/arthenux/whiskey-store-angular-frontend)
+
+Replace the placeholder URL above with your published frontend repository URL.
 
 ## Purpose
 
